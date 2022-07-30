@@ -14,31 +14,31 @@
 		height = 600 - margin.top - margin.bottom;
 
     const margin2 = {top: 700, right: 30, bottom: 30, left: 50};
-  
+
     const colNames = ["North_America_excluding_US", 
-                      "US", 
-                      "Central_and_South_America", 
-                      "Europe", 
-                      "CIS", 
-                      "Middle_East", 
-                      "Africa", 
-                      "China", 
-                      "India", 
-                      "Asia_Pacific_excluding_India_and_China"]
+    "US", 
+    "Central_and_South_America", 
+    "Europe", 
+    "CIS", 
+    "Middle_East", 
+    "Africa", 
+    "China", 
+    "India", 
+    "Asia_Pacific_excluding_India_and_China"]
 
     // append the svg object to the body of the page
     var svg = d3.select("#my_dataviz")
-    	.append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", 700)
-        .append("g")
-        .attr("transform",
-              "translate(" + margin.left + "," + margin.top + ")");
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", 1200)
+    .append("g")
+    .attr("transform",
+      "translate(" + margin.left + "," + margin.top + ")");
   	//Read the data
   	d3.csv("http://localhost:8000/co2_emissions_t.csv", 
       function(d) {
-          d.Year = d3.timeParse("%Y")(d.Year);
-          return d;
+        d.Year = d3.timeParse("%Y")(d.Year);
+        return d;
       }) 
     .then(function(data) {
       console.log(data);
@@ -51,20 +51,20 @@
 
       // Add X axis --> it is a date format
       var x = d3.scaleTime()
-        .domain(d3.extent(data, function(d) { return d.Year; }))
-        .range([ 0, width ]);
+      .domain(d3.extent(data, function(d) { return d.Year; }))
+      .range([ 0, width ]);
 
       var xAxis = svg.append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
 
       // Add Y axis
       var y = d3.scaleLinear()
-        .domain([0, 40000])
-        .range([ height, 0 ]);
+      .domain([0, 40000])
+      .range([ height, 0 ]);
       var yAxis = svg.append("g")
-        .call(d3.axisLeft(y));
+      .call(d3.axisLeft(y));
 
       var color = d3.scaleOrdinal()
       .domain(colNames)
@@ -81,26 +81,26 @@
       .style("padding", "10px");
 
       const drawArea = d3.area()
-          .x(function(d, i) { return x(data[i].Year); })
-          .y0(function(d) { return y(d[0]); })
-          .y1(function(d) { return y(d[1]); });
+      .x(function(d, i) { return x(data[i].Year); })
+      .y0(function(d) { return y(d[0]); })
+      .y1(function(d) { return y(d[1]); });
 
       var area = svg.append('g');
 
       // Add the area
       area.selectAll("myArea")  
-        .data(stackedData)
-        .enter()
-        .append("path")
-        .attr("class", "myArea")
-        .style("fill", function(d) {
-          return color(d.key);
-        })
-        .style("fill-opacity", 0.6)
-        .on("mouseover", function(event, d){tooltip.html(tooltipData(d3.pointer(event)[0])); return tooltip.style("visibility", "visible");})
-        .on("mousemove", function(event){return tooltip.html(tooltipData(d3.pointer(event)[0])).style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
-        .on("mouseout", function(event){return tooltip.style("visibility", "hidden");})
-        .attr("d", drawArea);
+      .data(stackedData)
+      .enter()
+      .append("path")
+      .attr("class", "myArea")
+      .style("fill", function(d) {
+        return color(d.key);
+      })
+      .style("fill-opacity", 0.6)
+      .on("mouseover", function(event, d){tooltip.html(tooltipData(d3.pointer(event)[0])); return tooltip.style("visibility", "visible");})
+      .on("mousemove", function(event){return tooltip.html(tooltipData(d3.pointer(event)[0])).style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
+      .on("mouseout", function(event){return tooltip.style("visibility", "hidden");})
+      .attr("d", drawArea);
 
 
       var data2 = data.map(d => {
@@ -122,9 +122,9 @@
 
       var brush = d3.brushX()
       .extent([
-          [0, 0],
-          [width, 30]
-      ])
+        [0, 0],
+        [width, 30]
+        ])
       .on("brush end", brushed);
 
       svg.append("defs").append("clipPath")
@@ -134,18 +134,18 @@
       .attr("height", height);
 
       var x2 = d3.scaleTime()
-        .domain(d3.extent(data2, function(d) { return d.Year; }))
-        .range([ 0, width ]);
+      .domain(d3.extent(data2, function(d) { return d.Year; }))
+      .range([ 0, width ]);
       
       var xAxis2 = svg.append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", "translate(0," + 410 + ")")
-        .call(d3.axisTop(x2).tickSize(0).tickFormat(""));
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + 410 + ")")
+      .call(d3.axisTop(x2).tickSize(0).tickFormat(""));
 
       // Add Y axis
       var y2 = d3.scaleLinear()
-        .domain([0, d3.max(data2, function(d) { return d.val; })])
-        .range([ 30, 0 ]);
+      .domain([0, d3.max(data2, function(d) { return d.val; })])
+      .range([ 30, 0 ]);
       
       var context = svg.append("g")
       .attr("transform", "translate(0," + 380 + ")");
@@ -163,9 +163,9 @@
         );
 
       context.append("g")
-        .attr("class", "brush")
-        .call(brush)
-        .call(brush.move, x.range());
+      .attr("class", "brush")
+      .call(brush)
+      .call(brush.move, x.range());
 
       function tooltipData(xpos) {
         let date_curr = x.invert(xpos);
@@ -188,12 +188,154 @@
 
       function brushed(event) {
         if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
-          var s = event.selection || x2.range();
-          x.domain(s.map(x2.invert, x2));
-          area.selectAll(".myArea").attr("d", drawArea);
-          svg.select(".axis--x").call(d3.axisBottom(x));
-        }
-      });
-	</script>
+        var s = event.selection || x2.range();
+        x.domain(s.map(x2.invert, x2));
+        area.selectAll(".myArea").attr("d", drawArea);
+        svg.select(".axis--x").call(d3.axisBottom(x));
+      }
+
+      //***********Energy consumption per capita
+
+      d3.csv("http://localhost:8000/energy_consumption.csv", 
+        function(d) {
+          d.Year = d3.timeParse("%Y")(d.Year);
+          return d;
+        })
+        .then(d => d.map(dd => 
+          colNames.map(region => {
+            let temp_data = {};
+            temp_data.Year = dd.Year;
+            temp_data.Region = region;
+            temp_data.Value = +dd[region];
+            return temp_data;
+          })).flatMap(d  => d))
+        .then(ec_data => {
+          console.log(ec_data);
+          const ec_margin = {top: 500, left: 50}, 
+          ec_width = 600,
+          ec_height = 400;
+
+          var ec_x = d3.scaleTime()
+          .domain(d3.extent(ec_data, function(d) { return d.Year; }))
+          .range([ 0, ec_width ]);
+
+          var ec_xAxis = svg.append("g")
+          .attr("transform", "translate(0," + (ec_margin.top + ec_height) + ")")
+          .call(d3.axisBottom(ec_x));
+
+          var ec_y = d3.scaleLinear()
+          .domain([0, d3.max(ec_data, function(d) { console.log(d.Year + " - " + d.Region + " - " + d.Value); return d.Value; })])
+          .range([ ec_height, 0]);
+
+          var ec_yAxis = svg.append("g")
+          .attr("transform", "translate(0," + (ec_margin.top) + ")")
+          .call(d3.axisLeft(ec_y));
+
+          var sumstat = d3.group(ec_data, d => d.Region);
+
+          console.log(sumstat);
+
+          var ec_area = svg.append("g")
+          .attr("transform", "translate(0," + (ec_margin.top) + ")")
+
+          var ec_draw = d3.line()
+          .x(function(d) { return ec_x(d.Year); })
+          .y(function(d) { return ec_y(d.Value); })
+
+          // Draw the line
+          ec_area.selectAll(".line")
+              .data(sumstat)
+              .enter()
+              .append("path")
+                .attr("fill", "none")
+                .attr("stroke", function(d){ return color(d[0]) })
+                .attr("stroke-width", 1.5)
+                .attr("d", function(d) { return ec_draw(d[1]); });
+
+          var lines = sumstat.size;
+
+          var focus = [];
+          var focusText = [];
+
+          for (var i = 0; i < lines; i++) {
+            focus.push(ec_area
+            .append('g')
+            .append('circle')
+              .style("fill", "none")
+              .attr("stroke", "grey")
+              .attr('r', 6)
+              .style("opacity", 0));
+
+            focusText.push(ec_area
+            .append('g')
+            .append('text')
+              .style("opacity", 0)
+              .attr("text-anchor", "left")
+              .style("font-size", "8px")
+              .attr("alignment-baseline", "middle"));
+          }
+
+          ec_area
+          .append("path")
+          .attr("class", "mouse-line")
+          .style("stroke", "lightgrey")
+          .style("stroke-width", "1px")
+          .style("opacity", "0");
+
+          ec_area
+          .append('rect')
+          .style("fill", "none")
+          .style("pointer-events", "all")
+          .attr('width', ec_width)
+          .attr('height', ec_height)
+          .on('mouseover', (event) => {
+            d3.select(".mouse-line")
+            .style("opacity", "1");
+            for (var i = 0; i < lines; i++) {
+              focus[i].style("opacity", 1);
+              focusText[i].style("opacity",1)
+            }
+          })
+          .on('mousemove', (event) => {
+            var x0 = ec_x.invert(d3.pointer(event)[0]);
+            for (var i = 0; i < lines; i++) {
+              var d0 = sumstat.get(colNames[i]).filter(d => d.Year.getFullYear() === x0.getFullYear())[0]
+              var y0 = d0.Value;
+              focus[i]
+                .attr("cx", ec_x(x0))
+                .attr("cy", ec_y(y0));
+              focusText[i]
+                .html(d0.Region + ": " + y0)
+                .attr("x", ec_x(x0) + 15)
+                .attr("y", ec_y(y0));
+            }
+            d3.select(".mouse-line")
+            .attr("d", function() {
+              var d = "M" + d3.pointer(event)[0] + "," + ec_height;
+              d += " " + d3.pointer(event)[0] + "," + 0;
+              return d;
+            });
+          })
+          .on('mouseout', (event) => {
+            d3.select(".mouse-line")
+            .style("opacity", "0");
+            for (var i = 0; i < lines; i++) {
+              focus[i].style("opacity", 0)
+              focusText[i].style("opacity", 0)
+            }
+          });
+
+
+
+
+
+
+
+
+
+
+        });
+    });
+  </script>
 </body>
 </html>
