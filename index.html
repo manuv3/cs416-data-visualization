@@ -15,7 +15,8 @@
 
     const margin2 = {top: 700, right: 30, bottom: 30, left: 50};
 
-    const colNames = ["North_America_excluding_US", 
+    const colNames = [
+    "North_America_excluding_US", 
     "US", 
     "Central_and_South_America", 
     "Europe", 
@@ -24,7 +25,8 @@
     "Africa", 
     "China", 
     "India", 
-    "Asia_Pacific_excluding_India_and_China"]
+    "Asia_Pacific_excluding_India_and_China"
+    ]
 
     const brushTarget = new EventTarget();
     const mainChartClickTarget = new EventTarget();
@@ -94,7 +96,7 @@
       var area = svg.append('g');
 
       // Add the area
-      area.selectAll("myArea")  
+      area.selectAll(".myArea")  
       .data(stackedData)
       .enter()
       .append("path")
@@ -129,7 +131,12 @@
           }));
         }
       })
-      .attr("d", drawArea);
+      .attr("d", d3.area()
+        .x(function(d, i) { return 0;})
+        .y0(function(d) { return 0; })
+        .y1(function(d) { return 0; }));
+
+
 
 
       var data2 = data.map(d => {
@@ -194,8 +201,23 @@
 
       var brushArea = context.append("g")
       .attr("class", "brush")
-      .call(brush)
-      .call(brush.move, x.range());
+      .call(brush);
+
+      let x_limit = x.range()[1];
+      let x_curr = x.range()[0];
+      let steps = 10;
+      let doneAnimation = false;
+      let brushAnimationInterval = setInterval(() => {
+        brushArea
+        .call(brush.move, [x.range()[0], x_curr]);
+        if (doneAnimation) {
+          clearInterval(brushAnimationInterval);  
+        }
+        x_curr = Math.min(x_curr + steps, x_limit);
+        if (x_curr == x_limit) {
+          doneAnimation = true; 
+        }
+      }, 200);
 
       function tooltipData(xpos) {
         let date_curr = x.invert(xpos);
@@ -393,6 +415,53 @@
             }
           });
         });
+
+
+
+
+
+
+
+        //***********Energy consumption per capita
+        /*let ec_selected_path = null;
+
+        d3.csv("http://localhost:8000/consumption_by_fuel_type.csv", 
+          function(d) {
+            d.Year = d3.timeParse("%Y")(d.Year);
+            return d;
+          })
+          .then(d => d.map(dd => 
+            colNames.map(region => {
+              let temp_data = {};
+              temp_data.Year = dd.Year;
+              temp_data.Region = region;
+              temp_data.Value = +dd[region];
+              return temp_data;
+            })).flatMap(d  => d))
+          .then(ec_data => {
+            console.log(ec_data);
+            const ec_margin = {top: 500, left: 50}, 
+            ec_width = 600,
+            ec_height = 400;
+
+            var ec_x = d3.scaleTime()
+            .domain(d3.extent(ec_data, function(d) { return d.Year; }))
+            .range([ 0, ec_width ]);
+
+            var ec_xAxis = svg.append("g")
+            .attr("class", "axis axis-x-ec")
+            .attr("transform", "translate(0," + (ec_margin.top + ec_height) + ")")
+            .call(d3.axisBottom(ec_x));
+
+            var ec_y = d3.scaleLinear()
+            .domain([0, d3.max(ec_data, function(d) { return d.Value; })])
+            .range([ ec_height, 0]);
+
+            var ec_yAxis = svg.append("g")
+            .attr("transform", "translate(0," + (ec_margin.top) + ")")
+            .call(d3.axisLeft(ec_y));
+
+          });  */
     });
   </script>
 </body>
