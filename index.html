@@ -3,7 +3,7 @@
 <head>
 	<title>CO2 Emissions</title>
 	<script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
 </head>
 <body>
 	<div style="margin-left: 200px; width: 1500px;" id="my_dataviz"></div>
@@ -31,7 +31,7 @@
     const brushTarget = new EventTarget();
     const mainChartClickTarget = new EventTarget();
 
-    let region_selected = false;
+    let region_selected = null;
 
     // append the svg object to the body of the page
     var svg = d3.select("#my_dataviz")
@@ -84,8 +84,8 @@
       .style("z-index", "10")
       .style("visibility", "hidden")
       .style("color", "#000")
-      .style("background-color", "#ffe6e6")
-      .style("opacity", "0.7")
+      .style("background-color", "#fff")
+      .style("opacity", "0.8")
       .style("padding", "10px");
 
       svg.append("defs")
@@ -94,6 +94,13 @@
       .append("rect")
       .attr("width", width)
       .attr("height", height);
+
+      svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "24px") 
+        .text("CO2 Emission Across World Regions (Million Tonnes)");
 
       const drawArea = d3.area()
       .x(function(d, i) { return x(data[i].Year); })
@@ -114,13 +121,13 @@
         return color(d.key);
       })
       .style("fill-opacity", 0.8)
-      .on("mouseover", function(event, d){tooltip.html(tooltipData(d3.pointer(event)[0])); return tooltip.style("visibility", "visible");})
-      .on("mousemove", function(event){return tooltip.html(tooltipData(d3.pointer(event)[0])).style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
-      .on("mouseout", function(event){return tooltip.style("visibility", "hidden");})
+      .on("mouseover", function(event, d){tooltip.html(tooltipData(d3.pointer(event)[0])); tooltip.style("visibility", "visible"); d3.select(this).style("cursor", "pointer"); })
+      .on("mousemove", function(event){tooltip.html(tooltipData(d3.pointer(event)[0])).style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px"); })
+      .on("mouseout", function(event){tooltip.style("visibility", "hidden");  d3.select(this).style("cursor", "default"); })
       .on("click", function(event) {
-        if (region_selected) {
+        if (region_selected != null) {
           area.selectAll(".myArea").attr("opacity", 0.8);
-          region_selected = false;
+          region_selected = null;
           mainChartClickTarget.dispatchEvent(new CustomEvent('click', {
             detail: {}
           }));
@@ -131,13 +138,15 @@
           let selected_region = stackedData.filter(d => d[selected_index][0] <= y0 && y0 <= d[selected_index][1])[0].key;
           area.selectAll(".myArea").attr("opacity", 0.2);
           area.select("#" + selected_region).attr("opacity", 0.8);
-          region_selected = true;
+          region_selected = selected_region;
           mainChartClickTarget.dispatchEvent(new CustomEvent('click', {
             detail: {
               "selected_region": selected_region
             }
           }));
         }
+        showAnnotations();
+        removeAnnotations();
       })
       .attr("d", d3.area()
         .x(function(d, i) { return 0;})
@@ -145,7 +154,7 @@
         .y1(function(d) { return 0; }));
 
 
-
+      //*****************Brush**************
 
       var data2 = data.map(d => {
         let data_temp = {};
@@ -212,13 +221,13 @@
         brushArea
         .call(brush.move, [x.range()[0], x_curr]);
         if (doneAnimation) {
-          clearInterval(brushAnimationInterval);  
+          clearInterval(brushAnimationInterval);
         }
         x_curr = Math.min(x_curr + steps, x_limit);
         if (x_curr == x_limit) {
           doneAnimation = true; 
         }
-      }, 200);
+      }, 100);
 
       function tooltipData(xpos) {
         let date_curr = x.invert(xpos);
@@ -231,7 +240,8 @@
               value = value.getFullYear();
               disp_text = disp_text + '<span>' + key + ': ' + '<strong>' + value + '</strong></span><hr/>'
             } else {
-              disp_text = disp_text + '<span>' + key + ': ' + '<strong>' + value + '</strong></span><br/>'
+              let textColor = color(key);
+              disp_text = disp_text + '<span style="color: ' + textColor + '"><strong>' + key + ': ' + value + '</strong></span><br/>'
             }
           }
         }
@@ -250,7 +260,137 @@
         }));
         area.selectAll(".myArea").attr("d", drawArea);
         svg.select(".axis--x").call(d3.axisBottom(x));
+        showAnnotations();
+        removeAnnotations();
       }
+
+
+
+      //******** Annotations ****************** 
+
+      const type = d3.annotationCalloutElbow
+
+      const annotations = [{
+        id: "china-biggest-producer",
+        note: {
+          label: "",
+          bgPadding: 20,
+          title: "2021-22: China added 31% of total CO2"
+        },
+        //can use x, y directly instead of data
+        data: { year: new Date(2020, 1, 1), value: 20000, region: "China" },
+        className: "show-bg",
+        dy: -100,
+        dx: -20
+      },
+      {
+        id: "china-joined-wto",
+        note: {
+          label: "",
+          bgPadding: 20,
+          title: "2001: China joined WTO, towards more open market policy"
+        },
+        //can use x, y directly instead of data
+        data: { year: new Date(2001, 1, 1), value: 17000, region: "China" },
+        className: "show-bg",
+        dy: -100,
+        dx: -20
+      },
+      {
+        id: "europe-oil-consumption-reduced",
+        note: {
+          label: "",
+          bgPadding: 20,
+          title: "1973-75: Oil consumption reduced in Europe"
+        },
+        //can use x, y directly instead of data
+        data: { year: new Date(1975, 1, 1), value: 10000, region: "Europe" },
+        className: "show-bg",
+        dy: -100,
+        dx: 0
+      },
+      {
+        id: "europe-oil-consumption-reduced2",
+        note: {
+          label: "",
+          bgPadding: 20,
+          title: "2007-08: Europe became less reliant on coal and oil"
+        },
+        //can use x, y directly instead of data
+        data: { year: new Date(2008, 1, 1), value: 10000, region: "Europe" },
+        className: "show-bg",
+        dy: -100,
+        dx: 0
+      },
+      {
+        id: "ussr-disintegration",
+        note: {
+          label: "",
+          bgPadding: 20,
+          title: "1991: USSR Disintegration led to economic slowdown for CIS region"
+        },
+        //can use x, y directly instead of data
+        data: { year: new Date(1991, 1, 1), value: 12000, region: "CIS" },
+        className: "show-bg",
+        dy: -100,
+        dx: 0
+      }]
+
+      const makeAnnotations = d3.annotation()
+        .editMode(false)
+        //also can set and override in the note.padding property
+        //of the annotation object
+        //.notePadding(15)
+        .type(type)
+        //accessors & accessorsInverse not needed
+        //if using x, y in annotations JSON
+        .accessors({
+          x: d => x(d.year),
+          y: d => y(d.value)
+        });
+        /*.accessorsInverse({
+           year: d => x.invert(d.x),
+           value: d => y.invert(d.y)
+        });*/
+
+      area
+        .append("g")
+        .attr("class", "annotation-group main-annotation-group");
+
+
+      function showAnnotations() {
+        let selectedAnn = annotations.filter(ann => {
+          let staYear = x.domain()[0].getFullYear();
+          let endYear = x.domain()[1].getFullYear();
+          let currYear = ann.data.year.getFullYear();
+          let currRegion = ann.data.region;
+          if (currYear == null || (currYear >= staYear && currYear <= endYear) && 
+            (currRegion == null || (region_selected == null || currRegion === region_selected))) {
+            return true;
+          } else {
+            return false;
+          }
+        });
+        area.select(".main-annotation-group").call(makeAnnotations.annotations(selectedAnn));
+      }
+
+      
+      function removeAnnotations() {
+        area.selectAll(".annotation").filter(d => {
+          let staYear = x.domain()[0].getFullYear();
+          let endYear = x.domain()[1].getFullYear();
+          let currYear = d.data.year.getFullYear();
+          let currRegion = d.data.region;
+          if (currYear == null || (currYear >= staYear && currYear <= endYear) && 
+            (currRegion == null || (region_selected == null || currRegion === region_selected))) {
+            return false;
+          } else {
+            return true;
+          } 
+        }).remove();
+      }
+
+
 
       //***********Energy consumption per capita
       let ec_selected_path = null;
@@ -273,6 +413,12 @@
           const ec_margin = {top: 500, left: 50}, 
           ec_width = 600,
           ec_height = 400;
+
+          svg.append("text")
+          .attr("transform", "translate(250," + (ec_margin.top - 20) + ")")
+          .attr("text-anchor", "middle")  
+          .style("font-size", "20px") 
+          .text("Electricity consumption per capita (Exajoules)");
 
           var ec_x = d3.scaleTime()
           .domain(d3.extent(ec_data, function(d) { return d.Year; }))
@@ -426,11 +572,6 @@
         });
 
 
-
-
-
-
-
         //***********Energy consumption by fuel type
         let cf_selected_region = "World";
 
@@ -473,6 +614,12 @@
             cf_width = 600,
             cf_height = 400;
 
+            svg.append("text")
+            .attr("transform", "translate(1100," + (cf_margin.top - 20) + ")")
+            .attr("text-anchor", "middle")  
+            .style("font-size", "20px") 
+            .text("Electricity consumption by fuel type (Exajoules)");
+
             // Add X axis
             var cf_x = d3.scaleBand()
                 .domain(date_values)
@@ -507,8 +654,13 @@
               .keys(fuelTypes)
               (cf_data.filter(d => d.Region === cf_selected_region && staYear <= d.Year.getFullYear() &&  d.Year.getFullYear() <= endYear));    
             }
-
             
+            svg.append("text")
+            .attr("transform", "translate(1000," + (cf_margin.top + 40) + ")")
+            .attr("class", "cf-selected-region-text")
+            //.attr("text-anchor", "middle")  
+            .style("font-size", "16px")
+            .text(cf_selected_region);
 
             cf_stackedData = create_cf_stackedData(date_values[0].getFullYear(), date_values[date_values.length - 1].getFullYear());
             
@@ -520,6 +672,8 @@
 
             // Show the bars
             function drawBars(cf_stackedData) {
+              d3.select(".cf-selected-region-text").text(cf_selected_region);
+
               cf_area
               .selectAll("g")
               // Enter in the stack data = loop key per key = group per group
@@ -538,19 +692,23 @@
               .attr("stroke", "grey")
               .on("mouseover", function (event, d) { // What happens when user hover a bar
                 // what subgroup are we hovering?
-                const subGroupName = d3.select(this.parentNode).datum().key
+                const subGroupName = d3.select(this.parentNode).datum().key;
 
                 // Reduce opacity of all rect to 0.2
-                 d3.selectAll(".myRect").style("opacity", 0.2)
+                 d3.selectAll(".myRect").style("opacity", 0.2);
 
                 // Highlight all rects of this subgroup with opacity 1. It is possible to select them since they have a specific class = their name.
-                 d3.selectAll("." + subGroupName).style("opacity", 1)
+                 d3.selectAll("." + subGroupName).style("opacity", 1);
+
+                 tooltip.html(subGroupName).style("visibility", "visible").style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");
               })
               .on("mouseleave", function (event,d) { // When user do not hover anymore
 
                 // Back to normal opacity: 1
                 d3.selectAll(".myRect")
-                .style("opacity",1)
+                .style("opacity",1);
+
+                tooltip.style("visibility", "none");
               }); 
             }
             
