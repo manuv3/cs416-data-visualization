@@ -197,21 +197,25 @@
       var context = svg.append("g")
       .attr("transform", "translate(0," + 380 + ")");
 
-      context.append("path")
+      /*context.append("path")
       .datum(data2)
       .attr("class", "area")
       .attr("fill", "none")
       .attr("stroke", "grey")
       .attr("stroke-width", 1.5)
       .attr("d", d3.line()
-        .curve(d3.curveMonotoneX)
         .x(function(d, i) { return x(d.Year); })
         .y(function(d, i) { return y2(d.val); })
-        );
+        );*/
 
       var brushArea = context.append("g")
       .attr("class", "brush")
       .call(brush);
+
+      d3.selectAll(".brush .handle")
+      .style("fill", "green")
+      .style("width", "20px");
+
 
       let x_limit = x.range()[1];
       let x_curr = x.range()[0];
@@ -301,7 +305,7 @@
         note: {
           label: "",
           bgPadding: 20,
-          title: "1973-75: Oil consumption reduced in Europe"
+          title: "1973-75: Oil consumption reduced in Europe owing to Israel-Arab war"
         },
         //can use x, y directly instead of data
         data: { year: new Date(1975, 1, 1), value: 10000, region: "Europe" },
