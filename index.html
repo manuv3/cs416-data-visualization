@@ -43,7 +43,7 @@
       "translate(" + margin.left + "," + margin.top + ")");
 
   	//Read the data
-  	d3.csv("http://localhost:8000/co2_emissions_t.csv", 
+  	d3.csv("http://localhost:8000/co2_emissions.csv", 
       function(d) {
         d.Year = d3.timeParse("%Y")(d.Year);
         return d;
