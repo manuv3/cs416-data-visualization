@@ -6,11 +6,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
 </head>
 <body>
-	<div style="margin-left: 400px; width: 800px;" id="my_dataviz"></div>
+	<div style="margin-left: 200px; width: 1500px;" id="my_dataviz"></div>
 
 	<script type="text/javascript">
 		const margin = {top: 100, right: 30, bottom: 150, left: 50}, 
-		width = 800 - margin.left - margin.right,
+		width = 1500 - margin.left - margin.right,
 		height = 600 - margin.top - margin.bottom;
 
     const margin2 = {top: 700, right: 30, bottom: 30, left: 50};
@@ -88,6 +88,13 @@
       .style("opacity", "0.7")
       .style("padding", "10px");
 
+      svg.append("defs")
+      .append("clipPath")
+      .attr("id", "clipMain")
+      .append("rect")
+      .attr("width", width)
+      .attr("height", height);
+
       const drawArea = d3.area()
       .x(function(d, i) { return x(data[i].Year); })
       .y0(function(d) { return y(d[0]); })
@@ -100,6 +107,7 @@
       .data(stackedData)
       .enter()
       .append("path")
+      .attr("clip-path", "url(#clipMain)")
       .attr("class", "myArea")
       .attr("id", (d, i) => d.key)
       .style("fill", function(d) {
@@ -162,13 +170,6 @@
         [width, 30]
         ])
       .on("brush end", brushed);
-
-      svg.append("defs")
-      .append("clipPath")
-      .attr("id", "clip")
-      .append("rect")
-      .attr("width", width)
-      .attr("height", height);
 
       var x2 = d3.scaleTime()
       .domain(d3.extent(data2, function(d) { return d.Year; }))
@@ -294,6 +295,13 @@
 
           console.log(sumstat);
 
+          svg.append("defs")
+          .append("clipPath")
+          .attr("id", "ec_clip")
+          .append("rect")
+          .attr("width", ec_width)
+          .attr("height", ec_height);
+
           var ec_area = svg.append("g")
           .attr("transform", "translate(0," + (ec_margin.top) + ")")
 
@@ -306,12 +314,13 @@
               .data(sumstat)
               .enter()
               .append("path")
-                .attr("id", d => d[0])
-                .attr("class", "ecArea")
-                .attr("fill", "none")
-                .attr("stroke", function(d){ return color(d[0]) })
-                .attr("stroke-width", 1.5)
-                .attr("d", function(d) { return ec_draw(d[1]); });
+              .attr("clip-path", "url(#ec_clip)")
+              .attr("id", d => d[0])
+              .attr("class", "ecArea")
+              .attr("fill", "none")
+              .attr("stroke", function(d){ return color(d[0]) })
+              .attr("stroke-width", 1.5)
+              .attr("d", function(d) { return ec_draw(d[1]); });
 
           var lines = sumstat.size;
 
@@ -422,46 +431,166 @@
 
 
 
-        //***********Energy consumption per capita
-        /*let ec_selected_path = null;
+        //***********Energy consumption by fuel type
+        let cf_selected_region = "World";
 
-        d3.csv("http://localhost:8000/consumption_by_fuel_type.csv", 
-          function(d) {
-            d.Year = d3.timeParse("%Y")(d.Year);
-            return d;
+        const fuelTypes = ["Coal", "Oil", "Natural_Gas", "Nuclear", "Hydro", "Renewables"];
+
+        d3.csv("http://localhost:8000/consumption_by_fuel_type.csv")
+          .then(d => {
+            let cf_data = new Map();
+            let years =  d.columns.slice(2);
+            d.forEach(dd => {
+              if (cf_data.get(dd.Region) == null) {
+                cf_data.set(dd.Region, new Map());
+              }
+              let regionData = cf_data.get(dd.Region);
+              years.forEach(year => {
+                if (regionData.get(year) == null) {
+                  let obj = {};
+                  obj["Region"] = dd.Region;
+                  obj["Year"] = d3.timeParse("%Y")(year);
+                  regionData.set(year, obj);
+                }
+                let yearData = regionData.get(year);
+                yearData[dd.Fuel] = +dd[year];
+              });
+            });
+            return cf_data;
           })
-          .then(d => d.map(dd => 
-            colNames.map(region => {
-              let temp_data = {};
-              temp_data.Year = dd.Year;
-              temp_data.Region = region;
-              temp_data.Value = +dd[region];
-              return temp_data;
-            })).flatMap(d  => d))
-          .then(ec_data => {
-            console.log(ec_data);
-            const ec_margin = {top: 500, left: 50}, 
-            ec_width = 600,
-            ec_height = 400;
+          .then(d => {
+            let merged = [];
+            for (let yearMap of d.values()) {
+              for (let obj of yearMap.values()) {
+                merged.push(obj);
+              }   
+            }
+            return merged; 
+          })
+          .then(cf_data => {
+            console.log(cf_data);
+            const cf_margin = {top: 500, left: 800}, 
+            cf_width = 600,
+            cf_height = 400;
 
-            var ec_x = d3.scaleTime()
-            .domain(d3.extent(ec_data, function(d) { return d.Year; }))
-            .range([ 0, ec_width ]);
+            // Add X axis
+            var cf_x = d3.scaleBand()
+                .domain(date_values)
+                .range([0, cf_width])
+                .padding([0.2])
+            svg.append("g")
+              .attr("transform", "translate(" + cf_margin.left + ", " + (cf_margin.top + cf_height) + ")")
+              .attr("class", "axis-x-cf")
+              .call(d3.axisBottom(cf_x)
+                .tickSizeOuter(0)
+                .tickFormat(function(d,i) {  return d.getFullYear(); }))
+              .selectAll("text")
+              .style("text-anchor", "end")
+              .style("font-size", "6px")
+              .attr("transform", "rotate(-45)" );
 
-            var ec_xAxis = svg.append("g")
-            .attr("class", "axis axis-x-ec")
-            .attr("transform", "translate(0," + (ec_margin.top + ec_height) + ")")
-            .call(d3.axisBottom(ec_x));
+            // Add Y axis
+            var cf_y = d3.scaleLinear()
+              .domain([0, 600])
+              .range([ cf_height, 0 ]);
+            svg.append("g")
+              .attr("transform", "translate(" + cf_margin.left + ", " + cf_margin.top + ")")
+              .call(d3.axisLeft(cf_y));
 
-            var ec_y = d3.scaleLinear()
-            .domain([0, d3.max(ec_data, function(d) { return d.Value; })])
-            .range([ ec_height, 0]);
+            // color palette = one color per subgroup
+            var cf_color = d3.scaleOrdinal()
+              .domain(fuelTypes)
+              .range(d3.schemeRdYlGn[6]);
 
-            var ec_yAxis = svg.append("g")
-            .attr("transform", "translate(0," + (ec_margin.top) + ")")
-            .call(d3.axisLeft(ec_y));
+            function create_cf_stackedData(staYear, endYear) {
+              return d3.stack()
+              .keys(fuelTypes)
+              (cf_data.filter(d => d.Region === cf_selected_region && staYear <= d.Year.getFullYear() &&  d.Year.getFullYear() <= endYear));    
+            }
 
-          });  */
+            
+
+            cf_stackedData = create_cf_stackedData(date_values[0].getFullYear(), date_values[date_values.length - 1].getFullYear());
+            
+
+            var cf_area = svg.append("g")
+            .attr("transform", "translate(" + cf_margin.left + ", " + (cf_margin.top) + ")");
+
+            drawBars(cf_stackedData);
+
+            // Show the bars
+            function drawBars(cf_stackedData) {
+              cf_area
+              .selectAll("g")
+              // Enter in the stack data = loop key per key = group per group
+              .data(cf_stackedData)
+              .join("g")
+              .attr("fill", function(d) { return cf_color(d.key); })
+              .attr("class", function(d){ return "myRect " + d.key }) // Add a class to each subgroup: their name
+              .selectAll("rect")
+              // enter a second time = loop subgroup per subgroup to add all rectangles
+              .data(function(d) { return d; })
+              .join("rect")
+              .attr("x", function(d) { return cf_x(d.data.Year); })
+              .attr("y", function(d) { return cf_y(d[1]); })
+              .attr("height", function(d) { return cf_y(d[0]) - cf_y(d[1]); })
+              .attr("width", cf_x.bandwidth())
+              .attr("stroke", "grey")
+              .on("mouseover", function (event, d) { // What happens when user hover a bar
+                // what subgroup are we hovering?
+                const subGroupName = d3.select(this.parentNode).datum().key
+
+                // Reduce opacity of all rect to 0.2
+                 d3.selectAll(".myRect").style("opacity", 0.2)
+
+                // Highlight all rects of this subgroup with opacity 1. It is possible to select them since they have a specific class = their name.
+                 d3.selectAll("." + subGroupName).style("opacity", 1)
+              })
+              .on("mouseleave", function (event,d) { // When user do not hover anymore
+
+                // Back to normal opacity: 1
+                d3.selectAll(".myRect")
+                .style("opacity",1)
+              }); 
+            }
+            
+            
+
+            /*brushTarget.addEventListener('brush', (event) => {
+              let domain = event.detail.domain;
+              let staYear = domain[0].getFullYear();
+              let endYear = domain[1].getFullYear();
+              let newDomain = [];
+              for (let curr = staYear; curr <= endYear; curr++) {
+                newDomain.push(new Date(curr, 1, 1));
+              }
+              cf_x.domain(newDomain);
+              svg.select(".axis-x-cf").call(d3.axisBottom(cf_x)
+                .tickSizeOuter(0)
+                .tickFormat(function(d,i) {  return d.getFullYear(); }))
+              .selectAll("text")
+              .style("text-anchor", "end")
+              .style("font-size", "6px")
+              .attr("transform", "rotate(-45)");
+
+              let newData = create_cf_stackedData(newDomain[0].getFullYear(), newDomain[newDomain.length - 1].getFullYear());
+              drawBars(newData);
+
+            });*/
+
+            mainChartClickTarget.addEventListener('click', (event) => {
+              let detail = event.detail;
+              if (detail != null && detail.selected_region != null) {
+                cf_selected_region = detail.selected_region;
+              } else {
+                cf_selected_region = "World";
+              }
+              let domain = cf_x.domain();
+              let newData = create_cf_stackedData(domain[0], domain[domain.length - 1]);
+              drawBars(newData);
+            });
+
+          });
     });
   </script>
 </body>
