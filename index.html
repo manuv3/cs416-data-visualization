@@ -243,7 +243,7 @@
             if (key === "Year") {
               value = value.getFullYear();
               disp_text = disp_text + '<span>' + key + ': ' + '<strong>' + value + '</strong></span><hr/>'
-            } else {
+            } else if (region_selected == null || key === region_selected) {
               let textColor = color(key);
               disp_text = disp_text + '<span style="color: ' + textColor + '"><strong>' + key + ': ' + value + '</strong></span><br/>'
             }
@@ -272,8 +272,6 @@
 
       //******** Annotations ****************** 
 
-      const type = d3.annotationCalloutElbow
-
       const annotations = [{
         id: "china-biggest-producer",
         note: {
@@ -282,7 +280,7 @@
           title: "2021-22: China added 31% of total CO2"
         },
         //can use x, y directly instead of data
-        data: { year: new Date(2020, 1, 1), value: 20000, region: "China" },
+        data: { year: new Date(2020, 0, 1), value: 20000, region: "China" },
         className: "show-bg",
         dy: -100,
         dx: -20
@@ -295,7 +293,7 @@
           title: "2001: China joined WTO, towards more open market policy"
         },
         //can use x, y directly instead of data
-        data: { year: new Date(2001, 1, 1), value: 17000, region: "China" },
+        data: { year: new Date(2001, 0, 1), value: 17000, region: "China" },
         className: "show-bg",
         dy: -100,
         dx: -20
@@ -308,7 +306,7 @@
           title: "1973-75: Oil consumption reduced in Europe owing to Israel-Arab war"
         },
         //can use x, y directly instead of data
-        data: { year: new Date(1975, 1, 1), value: 10000, region: "Europe" },
+        data: { year: new Date(1975, 0, 1), value: 10000, region: "Europe" },
         className: "show-bg",
         dy: -100,
         dx: 0
@@ -321,7 +319,7 @@
           title: "2007-08: Europe became less reliant on coal and oil"
         },
         //can use x, y directly instead of data
-        data: { year: new Date(2008, 1, 1), value: 10000, region: "Europe" },
+        data: { year: new Date(2008, 0, 1), value: 10000, region: "Europe" },
         className: "show-bg",
         dy: -100,
         dx: 0
@@ -334,7 +332,7 @@
           title: "1991: USSR Disintegration led to economic slowdown for CIS region"
         },
         //can use x, y directly instead of data
-        data: { year: new Date(1991, 1, 1), value: 12000, region: "CIS" },
+        data: { year: new Date(1991, 0, 1), value: 12000, region: "CIS" },
         className: "show-bg",
         dy: -100,
         dx: 0
@@ -345,7 +343,7 @@
         //also can set and override in the note.padding property
         //of the annotation object
         //.notePadding(15)
-        .type(type)
+        .type(d3.annotationCalloutElbow)
         //accessors & accessorsInverse not needed
         //if using x, y in annotations JSON
         .accessors({
@@ -359,7 +357,7 @@
 
       area
         .append("g")
-        .attr("class", "annotation-group main-annotation-group");
+        .attr("class", "annotation-group");
 
 
       function showAnnotations() {
@@ -375,7 +373,7 @@
             return false;
           }
         });
-        area.select(".main-annotation-group").call(makeAnnotations.annotations(selectedAnn));
+        area.select(".annotation-group").call(makeAnnotations.annotations(selectedAnn));
       }
 
       
@@ -572,7 +570,92 @@
               ec_area.selectAll(".ecArea").style("opacity", 1);
               ec_selected_path = null;
             }
+            ec_showAnnotations();
           });
+
+          const ec_annotations = [{
+              id: "low-per-capita-china-inda",
+              note: {
+                label: "",
+                bgPadding: 20,
+                title: "Per capita power consumption remains low for China, India. But offset by huge population."
+              },
+              //can use x, y directly instead of data
+              data: { region: "World" },
+              className: "show-bg",
+              dy: -150,
+              dx: 50,
+              x: ec_width - 20,
+              y: ec_height
+            },
+            {
+              id: "low-per-capita-china-inda",
+              note: {
+                label: "",
+                bgPadding: 20,
+                title: "Per capita power consumption remains low for China, India. But offset by huge population."
+              },
+              //can use x, y directly instead of data
+              data: { region: "India" },
+              className: "show-bg",
+              dy: -150,
+              dx: 50,
+              x: ec_width - 20,
+              y: ec_height
+            },
+            {
+              id: "low-per-capita-china-inda",
+              note: {
+                label: "",
+                bgPadding: 20,
+                title: "Per capita power consumption remains low for China, India. But offset by huge population."
+              },
+              //can use x, y directly instead of data
+              data: { region: "China" },
+              className: "show-bg",
+              dy: -150,
+              dx: 50,
+              x: ec_width - 20,
+              y: ec_height
+            }];
+
+            const ec_makeAnnotations = d3.annotation()
+              .editMode(false)
+              //also can set and override in the note.padding property
+              //of the annotation object
+              //.notePadding(15)
+              .type(d3.annotationCalloutElbow)
+              //accessors & accessorsInverse not needed
+              //if using x, y in annotations JSON
+              .accessors({
+                x: d => ec_x(d.year),
+                y: d => ec_y(d.value)
+              });
+
+            var ec_annotationArea = svg
+              .append("g")
+              .attr("transform", "translate(0," + (ec_margin.top) + ")")
+              .attr("class", "annotation-group");
+
+
+            ec_showAnnotations();
+
+
+            function ec_showAnnotations() {
+              let selectedAnn = ec_annotations.filter(ann => {
+                let staYear = ec_x.domain()[0].getFullYear();
+                let endYear = ec_x.domain()[ec_x.domain().length - 1].getFullYear();
+                let currYear = ann.data.year != null ? ann.data.year.getFullYear() : null;
+                let currRegion = ann.data.region;
+                if ((currYear == null || (currYear >= staYear && currYear <= endYear)) && 
+                  (currRegion == null || (ec_selected_path == null || Array.from(sumstat.keys()).findIndex(key => key === currRegion) === ec_selected_path))) {
+                  return true;
+                } else {
+                  return false;
+                }
+              });
+              ec_annotationArea.call(ec_makeAnnotations.annotations(selectedAnn));
+            }
         });
 
 
@@ -629,6 +712,7 @@
                 .domain(date_values)
                 .range([0, cf_width])
                 .padding([0.2])
+            console.log(cf_x.domain());
             svg.append("g")
               .attr("transform", "translate(" + cf_margin.left + ", " + (cf_margin.top + cf_height) + ")")
               .attr("class", "axis-x-cf")
@@ -712,19 +796,19 @@
                 d3.selectAll(".myRect")
                 .style("opacity",1);
 
-                tooltip.style("visibility", "none");
+                tooltip.style("visibility", "hidden");
               }); 
             }
             
             
 
-            /*brushTarget.addEventListener('brush', (event) => {
+            brushTarget.addEventListener('brush', (event) => {
               let domain = event.detail.domain;
               let staYear = domain[0].getFullYear();
               let endYear = domain[1].getFullYear();
               let newDomain = [];
               for (let curr = staYear; curr <= endYear; curr++) {
-                newDomain.push(new Date(curr, 1, 1));
+                newDomain.push(new Date(curr, 0, 1));
               }
               cf_x.domain(newDomain);
               svg.select(".axis-x-cf").call(d3.axisBottom(cf_x)
@@ -738,7 +822,7 @@
               let newData = create_cf_stackedData(newDomain[0].getFullYear(), newDomain[newDomain.length - 1].getFullYear());
               drawBars(newData);
 
-            });*/
+            });
 
             mainChartClickTarget.addEventListener('click', (event) => {
               let detail = event.detail;
@@ -750,7 +834,61 @@
               let domain = cf_x.domain();
               let newData = create_cf_stackedData(domain[0], domain[domain.length - 1]);
               drawBars(newData);
+              cf_showAnnotations();
             });
+
+
+            const cf_annotations = [{
+              id: "constant-coal-usage",
+              note: {
+                label: "",
+                bgPadding: 20,
+                title: "2015-2021: Coal usage remained almost constant"
+              },
+              //can use x, y directly instead of data
+              data: { year: new Date(2018, 0, 1), value: 150, region: "World" },
+              className: "show-bg",
+              dy: -150,
+              dx: -200
+            }]
+
+            const cf_makeAnnotations = d3.annotation()
+              .editMode(false)
+              //also can set and override in the note.padding property
+              //of the annotation object
+              //.notePadding(15)
+              .type(d3.annotationCalloutElbow)
+              //accessors & accessorsInverse not needed
+              //if using x, y in annotations JSON
+              .accessors({
+                x: d => cf_x(d.year),
+                y: d => cf_y(d.value)
+              });
+
+            var cf_annotationArea = svg
+              .append("g")
+              .attr("transform", "translate(" + cf_margin.left + ", " + (cf_margin.top) + ")")
+              .attr("class", "annotation-group");
+
+
+            cf_showAnnotations();
+
+
+            function cf_showAnnotations() {
+              let selectedAnn = cf_annotations.filter(ann => {
+                let staYear = cf_x.domain()[0].getFullYear();
+                let endYear = cf_x.domain()[cf_x.domain().length - 1].getFullYear();
+                let currYear = ann.data.year != null ? ann.data.year.getFullYear() : null;
+                let currRegion = ann.data.region;
+                if ((currYear == null || (currYear >= staYear && currYear <= endYear)) && 
+                  (currRegion == null || (cf_selected_region == null || currRegion === cf_selected_region))) {
+                  return true;
+                } else {
+                  return false;
+                }
+              });
+              cf_annotationArea.call(cf_makeAnnotations.annotations(selectedAnn));
+            }
 
           });
     });
