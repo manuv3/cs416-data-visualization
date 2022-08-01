@@ -558,6 +558,7 @@
             ec_x.domain(domain);
             ec_area.selectAll(".ecArea").attr("d", function(d) { return ec_draw(d[1]); });
             svg.select(".axis-x-ec").call(d3.axisBottom(ec_x));
+            ec_showAnnotations();
           });
 
           mainChartClickTarget.addEventListener('click', (event) => {
@@ -636,9 +637,6 @@
               .append("g")
               .attr("transform", "translate(0," + (ec_margin.top) + ")")
               .attr("class", "annotation-group");
-
-
-            ec_showAnnotations();
 
 
             function ec_showAnnotations() {
@@ -821,7 +819,7 @@
 
               let newData = create_cf_stackedData(newDomain[0].getFullYear(), newDomain[newDomain.length - 1].getFullYear());
               drawBars(newData);
-
+              cf_showAnnotations();
             });
 
             mainChartClickTarget.addEventListener('click', (event) => {
@@ -869,9 +867,6 @@
               .append("g")
               .attr("transform", "translate(" + cf_margin.left + ", " + (cf_margin.top) + ")")
               .attr("class", "annotation-group");
-
-
-            cf_showAnnotations();
 
 
             function cf_showAnnotations() {
